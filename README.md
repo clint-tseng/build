@@ -14,13 +14,20 @@ All Rubygem dependencies are managed by Ruby Bundler. There are config files pre
 
 We depend on one native binding, to connect to a PostgreSQL database. To satisfy the binding, you can install `libpq-dev` on apt, or `postgresql` on homebrew.
 
-If you run into trouble, try updating Bundler: `gem update --system && gem install bundler`.
+If you run into trouble, see the [building guide](BUILDING.md) for further details.
 
 ### Setup and Execution
 
 Now that you have resolved all the appropriate dependencies, you'll need to set up the configuration by copying `config.yml.sample` to `config.yml`. This file contains a number of secret keys and tokens, so be sure not to check it into source control once you put your own keys into it. Note that the `cookie_ssl_only` flag should only be set to true if you are serving your requests on HTTPS; it should likely remain off for local development.
 
 Next, you want to start up your databases. Create a database in your Postgres instance according to how you populated `config.yml`, then run `rake db:migrate` to run migrations against that database. Ideally, create the database with an encoding of `UTF8`.
+
+If you are using the development settings for the config file, you'll want to do this:
+
+```
+create role odkbuild with login password 'odkbuild';
+create database odkbuild with owner='odkbuild' encoding='utf8';
+```
 
 Finally, you'll want to run `bundle exec rackup config.ru` to start the server, or `bundle exec shotgun config.ru` if you want the application to automatically detect your changes to source code and load them up when you refresh the app in your web browser.
 

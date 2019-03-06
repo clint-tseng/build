@@ -61,7 +61,7 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
         return title;
     };
 
-    var loadOne = odkmaker.data.loadOne = function(control)
+    var loadOne = odkmaker.data.loadOne = function(control, $parent)
     {
         var properties = null;
         if ((control.type == 'group') || (control.type == 'branch') || (control.type == 'metadata'))
@@ -81,15 +81,21 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
             .addClass(control.type)
             .odkControl(control.type, null, properties);
 
+        if ($parent != null)
+        {
+            $result.appendTo($parent);
+            $result.trigger('odkControl-added');
+        }
+
         if (control.type == 'group')
             loadMany($result.find('.workspaceInner'), control.children);
 
         return $result;
     };
 
-    var loadMany = function($root, controls)
+    var loadMany = function($parent, controls)
     {
-        _.each(controls, function(control) { loadOne(control).appendTo($root).trigger('odkControl-added'); });
+        _.each(controls, function(control) { loadOne(control, $parent); });
     };
     // forms without a version are assumed to be version 0. any form at a version less than
     // the current will be upgraded. to define an upgrade, add an upgrade object to any module
@@ -110,6 +116,7 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
         $('.control').trigger('odkControl-removing');
         $('.control').trigger('odkControl-removed');
         $('.workspace').empty();
+        odkmaker.application.clearProperties();
 
         $('h1').text(formObj.title);
         $('#formProperties_title').val(formObj.metadata.htitle)
@@ -147,6 +154,25 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
         'Horizontal Layout': 'horizontal',
         'Vertical Slider': 'vertical',
         'Picker': 'picker'
+    };
+    var mediaTypes = {
+         'Image': 'image/*',
+         'New Image': 'image/*',
+         'Selfie': 'image/*',
+         'Annotate': 'image/*',
+         'Draw': 'image/*',
+         'Signature': 'image/*',
+         'Audio': 'audio/*',
+         'Video': 'video/*',
+         'Selfie Video': 'video/*'
+    };
+    var mediaAppearances = {
+         'New Image': 'new',
+         'Signature': 'signature',
+         'Annotate': 'annotate',
+         'Draw': 'draw',
+         'Selfie': 'new-front',
+         'Selfie Video': 'new-front'
     };
     var addTranslation = function(obj, itextPath, translations)
     {
@@ -228,7 +254,7 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
             instance.children.push(instanceTag);
             var bodyTag = {
                 name: 'group',
-                attrs: {},
+                attrs: { ref: xpath + control.name },
                 children: []
             };
             body.children.push(bodyTag);
@@ -509,10 +535,16 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
         // numeric/date range
         if ((control.range !== undefined) && (control.range !== false))
         {
-            if (!$.isBlank(control.range.min))
-                constraint.push('. &gt;' + (control.range.minInclusive ? '= ' : ' ') + xmlValue(control.range.min));
-            if (!$.isBlank(control.range.max))
-                constraint.push('. &lt;' + (control.range.maxInclusive ? '= ' : ' ') + xmlValue(control.range.max));
+            if (!$.isBlank(control.range.min)) {
+                var min = xmlValue(control.range.min);
+                if (control.type === 'inputDate') min = 'date(' + min + ')';
+                constraint.push('. &gt;' + (control.range.minInclusive ? '= ' : ' ') + min);
+            }
+            if (!$.isBlank(control.range.max)) {
+                var max = xmlValue(control.range.max);
+                if (control.type === 'inputDate') max = 'date(' + max + ')';
+                constraint.push('. &lt;' + (control.range.maxInclusive ? '= ' : ' ') + max);
+            }
 
             invalidText = 'Value must be between ' + $.emptyString(control.range.min, 'anything') + ' and ' + $.emptyString(control.range.max, 'anything');
         }
@@ -529,8 +561,11 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
         }
 
         // media kind
-        if (control.type == 'inputMedia')
-            bodyTag.attrs.mediatype = control.kind.toLowerCase() + '/*';
+        if (control.type == 'inputMedia') {
+            bodyTag.attrs.mediatype = mediaTypes[control.kind];
+            if (mediaAppearances[control.kind] != null)
+                bodyTag.attrs.appearance = mediaAppearances[control.kind];
+        }
 
         // appearance
         if (control.appearance != null)

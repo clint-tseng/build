@@ -191,13 +191,24 @@
         },
         fieldListExpr: {
             given: [ 'self', { scope: 'parents', property: 'fieldList' } ],
-            prereq: hasString,
+            prereq: function(x) { return (x !== false) && hasString(x); },
             check: function(expr, parentFLs)
             {
                 return _.all(parentFLs, function(fl) { return fl !== true; });
             },
-            severity: 'warning',
-            message: 'Because this control is within a single-screen group (field list), any expressions that reference other fields in the same group will not work.'
+            warning: true,
+            message: 'Because this control is within a single-screen group (field list), any expressions that reference other fields in the same group will not work as expected (at least in ODK Collect).'
+        },
+        fieldListFollowup: {
+            given: [ 'self', { scope: 'parents', property: 'fieldList' } ],
+            prereq: function(other) {
+                return _.isArray(other) && (other.length > 0);
+            },
+            check: function(other, parentFLs)
+            {
+                return _.all(parentFLs, function(fl) { return fl !== true; });
+            },
+            message: 'Because this control is within a single-screen group (field list), the follow-up question feature will not work (at least in ODK Collect).'
         }
     };
 

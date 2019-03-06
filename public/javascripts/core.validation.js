@@ -213,13 +213,16 @@
 
                 propertiesRouting[param][id].f = go = function()
                 {
+                    // if we have been reaped since our check was scheduled (eg by an open-form op), bail.
+                    if ((controls.length > 0) && !document.body.contains(controls[0])) return;
+
                     f(_.map(controls, function(control) { return $(control).data('odkControl-properties')[param].value; }));
                     scheduled = false;
                 };
 
                 if (scheduled === false)
                 {
-                    _.defer(function() { go(); });
+                    _.defer(go);
                     scheduled = true;
                 }
             };
@@ -320,14 +323,14 @@
             });
         }
 
-        var lastHasError = false;
+        var lastFailed = false;
         var apply = function()
         {
             if (displayed === false)
             {
-                if (lastHasError === true)
+                if (lastFailed === true)
                 {
-                    lastHasError = result.hasError = false;
+                    lastFailed = result.failed = false;
                     $control.trigger('odkControl-validationChanged', [ property, false ]);
                 }
                 return;
@@ -341,12 +344,13 @@
 
             //console.log('%c' + property.id + ': ' + validation + ' -> ' + passed, 'color:' + (passed === false ? 'red;font-weight:bold' : '#444'));
 
-            result.hasError = !passed;
-            if (lastHasError !== result.hasError) $control.trigger('odkControl-validationChanged', [ property, result.hasError ]);
-            lastHasError = result.hasError;
+            result.failed = !passed;
+            result.isWarning = (validationObj.warning === true);
+            if (lastFailed !== result.failed) $control.trigger('odkControl-validationChanged', [ property, (result.failed && !result.isWarning) ]);
+            lastFailed = result.failed;
         };
 
-        var result = { property: property, validation: validationObj, hasError: false };
+        var result = { property: property, validation: validationObj, failed: false };
         return result;
     };
 

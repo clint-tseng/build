@@ -402,7 +402,12 @@
                 else
                 {
                     var validations = $this.data('odkControl-validations');
-                    $this.toggleClass('error', _.any(validations, function(validation) { return validation.hasError === true; }));
+                    $this.removeClass('error warning');
+                    _.each(validations, function(validation)
+                    {
+                        if (validation.failed === true)
+                            $this.addClass((validation.isWarning === true) ? 'warning' : 'error');
+                    });
                 }
             });
 
@@ -492,6 +497,7 @@
                         value: {},
                         summary: false },
         relevance:    { name: 'Relevance',
+                        label: 'Show question if',
                         type: 'text',
                         description: 'Specify a custom expression to evaluate to determine if this field is shown.',
                         tips: [ 'The <a href="https://opendatakit.github.io/xforms-spec/#xpath-functions" rel="external">ODK XForms Functions Spec</a> may be useful.' ],
@@ -644,8 +650,14 @@
                         type: 'enum',
                         description: 'Type of media to upload.',
                         options: [ 'Image',
+                                   'New Image',
+                                   'Selfie',
+                                   'Annotate',
+                                   'Draw',
+                                   'Signature',
                                    'Audio',
-                                   'Video' ],
+                                   'Video',
+                                   'Selfie Video' ],
                         value: 'Image' } },
         inputBarcode: {},
         inputSelectOne: {
@@ -666,7 +678,7 @@
           other:      { name: 'Follow-up Question',
                         type: 'otherEditor',
                         bindAllowedIf: { 'cascading': [ null, undefined, false ] },
-                        validation: [ 'fieldListExpr' ],
+                        validation: [ 'fieldListFollowup' ],
                         description: 'Ask the following question as additional information only if a particular response is chosen.',
                         tips: [
                             'You can use this to easily prompt for more information if the user selects "Other," for example.',
@@ -749,6 +761,7 @@
                         validation: [ 'fieldListChildren' ],
                         value: false },
           relevance:  { name: 'Relevance',
+                        label: 'Show question if',
                         type: 'text',
                         description: 'Specify a custom expression to evaluate to determine if this group is shown.',
                         tips: [ 'The <a href="https://opendatakit.github.io/xforms-spec/#xpath-functions" rel="external">ODK XForms Functions Spec</a> may be useful.' ],
